@@ -8,10 +8,11 @@ package size
 import (
 	"strconv"
 
-	"github.com/gaudiy/vtprotobuf/generator"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/gaudiy/vtprotobuf/generator"
 )
 
 func init() {
@@ -160,7 +161,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`for k, v := range m.`, fieldname, ` { `)
 			p.P(`_ = k`)
 			p.P(`_ = v`)
-			sum := []interface{}{strconv.Itoa(keyKeySize)}
+			sum := []any{strconv.Itoa(keyKeySize)}
 
 			switch field.Message.Fields[0].Desc.Kind() {
 			case protoreflect.DoubleKind, protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind:
@@ -207,7 +208,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 				p.P(`l += `, strconv.Itoa(valueKeySize), ` + `, p.Helper("SizeOfVarint"), `(uint64(l))`)
 				sum = append(sum, `l`)
 			}
-			mapEntrySize := []interface{}{"mapEntrySize := "}
+			mapEntrySize := []any{"mapEntrySize := "}
 			for i, elt := range sum {
 				mapEntrySize = append(mapEntrySize, elt)
 				// if elt is not a string, then it is a helper function call
@@ -269,7 +270,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 	// See https://github.com/planetscale/vtprotobuf/issues/61
 	// Size is always keysize + 1 so just hardcode that here
 	if oneof && field.Desc.Kind() == protoreflect.MessageKind && !field.Desc.IsMap() && !field.Desc.IsList() {
-		p.P("} else { n += ", strconv.Itoa(key + 1), " }")
+		p.P("} else { n += ", strconv.Itoa(key+1), " }")
 	} else if repeated || nullable {
 		p.P(`}`)
 	}
