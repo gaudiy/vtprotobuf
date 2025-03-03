@@ -18,9 +18,7 @@ func init() {
 	})
 }
 
-var (
-	protoPkg = protogen.GoImportPath("google.golang.org/protobuf/proto")
-)
+var protoPkg = protogen.GoImportPath("google.golang.org/protobuf/proto")
 
 type equal struct {
 	*generator.GeneratedFile
@@ -32,19 +30,20 @@ var _ generator.FeatureGenerator = (*equal)(nil)
 func (p *equal) Name() string { return "equal" }
 
 func (p *equal) GenerateFile(file *protogen.File) bool {
-	proto3 := file.Desc.Syntax() == protoreflect.Proto3
 	for _, message := range file.Messages {
-		p.message(proto3, message)
+		p.message(file.Desc.Syntax(), message)
 	}
 	return p.once
 }
 
-const equalName = "EqualVT"
-const equalMessageName = "EqualMessageVT"
+const (
+	equalName        = "EqualVT"
+	equalMessageName = "EqualMessageVT"
+)
 
-func (p *equal) message(proto3 bool, message *protogen.Message) {
+func (p *equal) message(syntax protoreflect.Syntax, message *protogen.Message) {
 	for _, nested := range message.Messages {
-		p.message(proto3, nested)
+		p.message(syntax, nested)
 	}
 
 	if message.Desc.IsMapEntry() {
@@ -75,6 +74,9 @@ func (p *equal) message(proto3 bool, message *protogen.Message) {
 			}
 
 			fieldname := field.Oneof.GoName
+			if syntax >= protoreflect.Editions {
+				fieldname = "xxx_hidden_" + fieldname
+			}
 			if _, ok := oneofs[fieldname]; ok {
 				continue
 			}
@@ -106,8 +108,11 @@ func (p *equal) message(proto3 bool, message *protogen.Message) {
 	}
 
 	for _, field := range message.Fields {
+		if syntax >= protoreflect.Editions {
+			field.GoName = "xxx_hidden_" + field.GoName
+		}
 		oneof := field.Oneof != nil && !field.Oneof.Desc.IsSynthetic()
-		nullable := field.Message != nil || (field.Oneof != nil && field.Oneof.Desc.IsSynthetic()) || (!proto3 && !oneof)
+		nullable := field.Message != nil || (field.Oneof != nil && field.Oneof.Desc.IsSynthetic()) || ((syntax < protoreflect.Proto3) && !oneof)
 		if !oneof {
 			p.field(field, nullable)
 		}
