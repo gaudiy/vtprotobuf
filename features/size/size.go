@@ -7,6 +7,7 @@ package size
 
 import (
 	"strconv"
+	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/encoding/protowire"
@@ -23,7 +24,8 @@ func init() {
 
 type size struct {
 	*generator.GeneratedFile
-	once bool
+	once   bool
+	syntax protoreflect.Syntax
 }
 
 var _ generator.FeatureGenerator = (*size)(nil)
@@ -33,7 +35,15 @@ func (p *size) Name() string {
 }
 
 func (p *size) GenerateFile(file *protogen.File) bool {
+	p.syntax = file.Desc.Syntax()
 	for _, message := range file.Messages {
+		if p.syntax >= protoreflect.Editions {
+			for i, field := range message.Fields {
+				if !strings.HasPrefix(field.GoName, "xxx_hidden_") {
+					message.Fields[i].GoName = "xxx_hidden_" + field.GoName
+				}
+			}
+		}
 		p.message(message)
 	}
 
@@ -63,9 +73,13 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 	fieldname := field.GoName
 	nullable := field.Message != nil || (!oneof && field.Desc.HasPresence())
 	repeated := field.Desc.Cardinality() == protoreflect.Repeated
-	if repeated {
+	value := generator.ProtoWireType(field.Desc.Kind()) == protowire.VarintType
+	switch {
+	case repeated:
 		p.P(`if len(m.`, fieldname, `) > 0 {`)
-	} else if nullable {
+	case value:
+		p.P(`if _ = m.`, fieldname, `; true {`)
+	case nullable:
 		p.P(`if m.`, fieldname, ` != nil {`)
 	}
 	packed := field.Desc.IsPacked()
@@ -81,7 +95,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfVarint"), `(uint64(len(m.`, fieldname, `)*8))`, `+len(m.`, fieldname, `)*8`)
 		} else if repeated {
 			p.P(`n+=`, strconv.Itoa(key+8), `*len(m.`, fieldname, `)`)
-		} else if !oneof && !nullable {
+		} else if !oneof && !value && !nullable {
 			p.P(`if m.`, fieldname, ` != 0 {`)
 			p.P(`n+=`, strconv.Itoa(key+8))
 			p.P(`}`)
@@ -93,7 +107,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfVarint"), `(uint64(len(m.`, fieldname, `)*4))`, `+len(m.`, fieldname, `)*4`)
 		} else if repeated {
 			p.P(`n+=`, strconv.Itoa(key+4), `*len(m.`, fieldname, `)`)
-		} else if !oneof && !nullable {
+		} else if !oneof && !value && !nullable {
 			p.P(`if m.`, fieldname, ` != 0 {`)
 			p.P(`n+=`, strconv.Itoa(key+4))
 			p.P(`}`)
@@ -113,6 +127,8 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`}`)
 		} else if nullable {
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfVarint"), `(uint64(*m.`, fieldname, `))`)
+		} else if value {
+			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfVarint"), `(uint64(m.`, fieldname, `))`)
 		} else if !oneof {
 			p.P(`if m.`, fieldname, ` != 0 {`)
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfVarint"), `(uint64(m.`, fieldname, `))`)
@@ -125,7 +141,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfVarint"), `(uint64(len(m.`, fieldname, `)))`, `+len(m.`, fieldname, `)*1`)
 		} else if repeated {
 			p.P(`n+=`, strconv.Itoa(key+1), `*len(m.`, fieldname, `)`)
-		} else if !oneof && !nullable {
+		} else if !oneof && !value && !nullable {
 			p.P(`if m.`, fieldname, ` {`)
 			p.P(`n+=`, strconv.Itoa(key+1))
 			p.P(`}`)
@@ -138,6 +154,9 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`l = len(s)`)
 			p.P(`n+=`, strconv.Itoa(key), `+l+`, p.Helper("SizeOfVarint"), `(uint64(l))`)
 			p.P(`}`)
+		} else if value {
+			p.P(`l=len(m.`, fieldname, `)`)
+			p.P(`n+=`, strconv.Itoa(key), `+l+`, p.Helper("SizeOfVarint"), `(uint64(l))`)
 		} else if nullable {
 			p.P(`l=len(*m.`, fieldname, `)`)
 			p.P(`n+=`, strconv.Itoa(key), `+l+`, p.Helper("SizeOfVarint"), `(uint64(l))`)
@@ -254,6 +273,8 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 			p.P(`for _, e := range m.`, fieldname, ` {`)
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfZigzag"), `(uint64(e))`)
 			p.P(`}`)
+		} else if value {
+			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfZigzag"), `(uint64(m.`, fieldname, `))`)
 		} else if nullable {
 			p.P(`n+=`, strconv.Itoa(key), `+`, p.Helper("SizeOfZigzag"), `(uint64(*m.`, fieldname, `))`)
 		} else if !oneof {
@@ -271,7 +292,7 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 	// Size is always keysize + 1 so just hardcode that here
 	if oneof && field.Desc.Kind() == protoreflect.MessageKind && !field.Desc.IsMap() && !field.Desc.IsList() {
 		p.P("} else { n += ", strconv.Itoa(key+1), " }")
-	} else if repeated || nullable {
+	} else if repeated || value || nullable {
 		p.P(`}`)
 	}
 }
