@@ -40,11 +40,13 @@ func (cnt *counter) Current() string {
 type marshal struct {
 	*generator.GeneratedFile
 	Stable, once, strict bool
+	syntax               protoreflect.Syntax
 }
 
 var _ generator.FeatureGenerator = (*marshal)(nil)
 
 func (p *marshal) GenerateFile(file *protogen.File) bool {
+	p.syntax = file.Desc.Syntax()
 	for _, message := range file.Messages {
 		p.message(message)
 	}
@@ -116,6 +118,8 @@ func (p *marshal) field(oneof bool, numGen *counter, field *protogen.Field) {
 	fieldname := field.GoName
 	nullable := field.Message != nil || (!oneof && field.Desc.HasPresence())
 	repeated := field.Desc.Cardinality() == protoreflect.Repeated
+	value := generator.ProtoWireType(field.Desc.Kind()) == protowire.VarintType
+
 	if repeated {
 		p.P(`if len(m.`, fieldname, `) > 0 {`)
 	} else if nullable {
@@ -123,6 +127,8 @@ func (p *marshal) field(oneof bool, numGen *counter, field *protogen.Field) {
 			p.P(`if m.`, fieldname, ` == nil {`)
 			p.P(`return 0, `, p.Ident("fmt", "Errorf"), `("proto: required field `, field.Desc.Name(), ` not set")`)
 			p.P(`} else {`)
+		} else if value {
+			p.P(`if _ = m.`, fieldname, `; true {`)
 		} else {
 			p.P(`if m.`, fieldname, ` != nil {`)
 		}
@@ -224,6 +230,9 @@ func (p *marshal) field(oneof bool, numGen *counter, field *protogen.Field) {
 			p.P(`}`)
 		} else if nullable {
 			p.encodeVarint(`*m.`, fieldname)
+			p.encodeKey(fieldNumber, wireType)
+		} else if value {
+			p.encodeVarint(`m.`, fieldname)
 			p.encodeKey(fieldNumber, wireType)
 		} else if !oneof {
 			p.P(`if m.`, fieldname, ` != 0 {`)
