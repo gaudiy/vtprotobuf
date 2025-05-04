@@ -231,14 +231,14 @@ func (p *marshal) field(oneof bool, numGen *counter, field *protogen.Field) {
 		} else if nullable {
 			p.encodeVarint(`*m.`, fieldname)
 			p.encodeKey(fieldNumber, wireType)
-		} else if value {
-			p.encodeVarint(`m.`, fieldname)
-			p.encodeKey(fieldNumber, wireType)
 		} else if !oneof {
 			p.P(`if m.`, fieldname, ` != 0 {`)
 			p.encodeVarint(`m.`, fieldname)
 			p.encodeKey(fieldNumber, wireType)
 			p.P(`}`)
+		} else if value {
+			p.encodeVarint(`m.`, fieldname)
+			p.encodeKey(fieldNumber, wireType)
 		} else {
 			p.encodeVarint(`m.`, fieldname)
 			p.encodeKey(fieldNumber, wireType)
