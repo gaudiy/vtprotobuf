@@ -77,10 +77,10 @@ func (p *size) field(oneof bool, field *protogen.Field, sizeName string) {
 	switch {
 	case repeated:
 		p.P(`if len(m.`, fieldname, `) > 0 {`)
-	case value:
-		p.P(`if _ = m.`, fieldname, `; true {`)
 	case nullable:
 		p.P(`if m.`, fieldname, ` != nil {`)
+	case value:
+		p.P(`if _ = m.`, fieldname, `; true {`)
 	}
 	packed := field.Desc.IsPacked()
 	wireType := generator.ProtoWireType(field.Desc.Kind())

@@ -116,13 +116,17 @@ func (p *clone) cloneField(lhsBase, rhsBase string, allFieldsNullable bool, fiel
 	lhs := lhsBase + "." + fieldname
 	rhs := rhsBase + "." + fieldname
 
+	repeated := field.Desc.Cardinality() == protoreflect.Repeated
 	value := generator.ProtoWireType(field.Desc.Kind()) == protowire.VarintType
 
 	// At this point, we are only looking at reference types (pointers, maps, slices, interfaces), which can all
 	// be nil.
-	if value {
+	switch {
+	case repeated:
+		p.P(`if rhs := `, rhs, `; rhs != nil {`)
+	case value:
 		p.P(`if rhs := `, rhs, `; true {`)
-	} else {
+	default:
 		p.P(`if rhs := `, rhs, `; rhs != nil {`)
 	}
 	rhs = "rhs"
