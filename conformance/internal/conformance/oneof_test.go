@@ -1,7 +1,7 @@
 package conformance
 
 import (
-	"github.com/planetscale/vtprotobuf/types/known/structpb"
+	"github.com/gaudiy/vtprotobuf/types/known/structpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	upstreamstructpb "google.golang.org/protobuf/types/known/structpb"

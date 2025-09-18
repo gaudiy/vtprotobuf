@@ -5,7 +5,7 @@
 package grpc
 
 import (
-	"github.com/planetscale/vtprotobuf/generator"
+	"github.com/gaudiy/vtprotobuf/generator"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 

@@ -7,7 +7,7 @@
 package unique
 
 import (
-	_ "github.com/planetscale/vtprotobuf/vtproto"
+	_ "github.com/gaudiy/vtprotobuf/vtproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
