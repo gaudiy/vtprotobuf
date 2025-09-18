@@ -6,7 +6,7 @@ package inner
 
 import (
 	fmt "fmt"
-	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
+	protohelpers "github.com/gaudiy/vtprotobuf/protohelpers"
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	io "io"

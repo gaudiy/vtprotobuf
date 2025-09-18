@@ -1,7 +1,7 @@
 syntax = "proto3";
 option go_package = "testproto/unique";
 
-import "github.com/planetscale/vtprotobuf/vtproto/ext.proto";
+import "github.com/gaudiy/vtprotobuf/vtproto/ext.proto";
 
 message UniqueFieldExtension {
   string foo = 1 [(vtproto.options).unique = true];

@@ -15,8 +15,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/planetscale/vtprotobuf/generator"
-	"github.com/planetscale/vtprotobuf/vtproto"
+	"github.com/gaudiy/vtprotobuf/generator"
+	"github.com/gaudiy/vtprotobuf/vtproto"
 )
 
 func init() {
