@@ -11,8 +11,10 @@ import (
 
 const version = "1.1.0-vtproto"
 
-var requireUnimplementedAlways = true
-var requireUnimplemented = &requireUnimplementedAlways
+var (
+	requireUnimplementedAlways = true
+	requireUnimplemented       = &requireUnimplementedAlways
+)
 
 func init() {
 	generator.RegisterFeature("grpc", func(gen *generator.GeneratedFile) generator.FeatureGenerator {
@@ -29,6 +31,6 @@ func (g *grpc) GenerateFile(file *protogen.File) bool {
 		return false
 	}
 
-	generateFileContent(nil, file, g.GeneratedFile)
+	generateFileContent(file, g.GeneratedFile)
 	return true
 }
